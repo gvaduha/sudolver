@@ -2,11 +2,11 @@
 
 type Value = Value of int | None
 type Cell = (Value * int list)
-type Board = int * Cell list
+//type Board = int * Cell list
 
 let getEmptyBoard size =
     [0..(size*size-1)]
-    |> List.map (fun x -> x, (None, [1..size]))
+    |> List.map (fun x -> None, [1..size])
 
 (* transform initial value list ((x,y),val) to (pos,val) *)
 let initialValues size values =
@@ -16,18 +16,19 @@ let initialValues size values =
 
 (* create and initialize board *)
 let createBoard board initials =
-    board |> List.fold (fun x -> x)
-                                //i+1
-                                //if Map.containsKey initials i then c else c
-                                //)
-                                //(0)
+    let (_, newBoard) = board |> List.fold (fun (i, b) e -> 
+                                                (i+1, (match Map.tryFind i initials with
+                                                        | Some n -> (Value n, [])::b
+                                                        | _ -> e::b))) (1,[])
+    newBoard
 
 (* prints board (ad-hoc)*)
 let printBoard size board =
-    board |> List.map (fun x -> match (fst (snd x)) with
-                                    | None -> printf " |"
-                                    | v -> printf "%A|" v
-                                if ((fst x) + 1) % size = 0 then printfn "")
+    board |> List.fold (fun i x ->  match (fst x) with
+                                        | None -> printf " |"
+                                        | v -> printf "%d|" ((fun (Value x) -> x) v)
+                                    if i % size = 0 then printfn ""
+                                    i+1) (1)
 
 (* coordinates a values of known numbers ((x,y),val) *)
 let gameInitials = [
