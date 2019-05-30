@@ -6,7 +6,7 @@ type Cell = (Value * int list)
 
 let getEmptyBoard size =
     [0..(size*size-1)]
-    |> List.map (fun x -> None, [1..size])
+    |> List.map (fun x -> None, set [1..size])
 
 (* transform initial value list ((x,y),val) to (pos,val) *)
 let initialValues size values =
@@ -18,12 +18,12 @@ let initialValues size values =
 let createBoard board initials =
     let (_, newBoard) = board |> List.fold (fun (i, b) e -> 
                                                 (i+1, (match Map.tryFind i initials with
-                                                        | Some n -> (Value n, [])::b
-                                                        | _ -> e::b))) (1,[])
+                                                        | Some n -> (Value n, set [])::b
+                                                        | _ -> e::b))) (1, [])
     newBoard
 
 (* board raw *)
-let getRaw size board n =
+let getRow size board n =
     board |> List.skip (size*n) |> List.take size
 
 (* board column *)
@@ -44,28 +44,34 @@ let printBoard size board =
                                             i+1) (1)
     printfn ""
 
-(**)
-let rawScan size board =
-    let nums = board |> List.fold (fun l x -> match fst x with
+(* in every cell removes possible numbers that already solved in group *)
+let reducePossibilities group = 
+    let nums = group |> List.fold (fun l x -> match fst x with
                                               | Value x -> x::l
                                               | None -> l) ([])
-    board |> List.map (fun x -> let y = snd x
+    group |> List.map (fun x -> let y = Set.difference (snd x) (Set.ofList nums)
                                 (fst x, y))
+(* reduce possible numbers in raws *)
+let rawScan size board =
+    [0..size-1]
+    |> List.rev
+    |> List.fold (fun newb i -> (reducePossibilities (getRow size board i))::newb) ([])
+    |> List.concat
 
-(**)
+(* reduce possible numbers in columns *)
 let colScan size board =
     let b = board
     let s = size
     b
 
-(**)
+(* reduce possible numbers in boxes *)
 let boxScan size board =
     let b = board
     let s = size
     b
 
-(**)
-let reduce size board =
+(* set numbers in cells if there is only one possibility *)
+let reduceSolved size board =
     let b = board
     let s = size
     b
@@ -79,13 +85,13 @@ let isIncompleted board =
 
 (**)
 let rec simpleREPL size board =
-    let b = board |> rawScan size |>  colScan size |> boxScan size |> reduce size
+    let b = board |> rawScan size |>  colScan size |> boxScan size |> reduceSolved size
+    b
+    //printBoard size b
 
-    printBoard size b
-
-    match (isIncompleted b) with
-    | false -> b
-    | true -> simpleREPL size b
+    //match (isIncompleted b) with
+    //| false -> b
+    //| true -> simpleREPL size b
 
 (**)
 let parallelREPL =
@@ -110,10 +116,12 @@ let main argv =
     let emptyBoard = getEmptyBoard boardSize
     let board = createBoard emptyBoard (initialValues boardSize gameInitials)
     printBoard boardSize board
-    //printfn "%A" (getRaw boardSize board 0)
+    let y = rawScan boardSize board
+    printBoard boardSize y
+    printfn "%A" (y)
     //printfn "%A" (getCol boardSize board 0)
     //printfn "%A" (isIncompleted boardSize board)
 
-    simpleREPL boardSize board
-    printBoard boardSize board
-    0 // return an integer exit code
+    //simpleREPL boardSize board
+    //printBoard boardSize board
+    0
