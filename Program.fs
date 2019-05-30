@@ -39,16 +39,18 @@ let getCol size board n =
 let printBoard size board =
     let _ = board |> List.fold (fun i x ->  match (fst x) with
                                             | None -> printf " |"
-                                            | v -> printf "%d|" ((fun (Value x) -> x) v)
+                                            | Value v -> printf "%d|" v
                                             if i % size = 0 then printfn ""
                                             i+1) (1)
     printfn ""
 
 (**)
 let rawScan size board =
-    let b = board
-    let s = size
-    b
+    let nums = board |> List.fold (fun l x -> match fst x with
+                                              | Value x -> x::l
+                                              | None -> l) ([])
+    board |> List.map (fun x -> let y = snd x
+                                (fst x, y))
 
 (**)
 let colScan size board =
