@@ -55,14 +55,16 @@ let reducePossibilities group =
 let rawScan size board =
     [0..size-1]
     |> List.rev
-    |> List.fold (fun newb i -> (reducePossibilities (getRow size board i))::newb) ([])
-    |> List.concat
+    |> List.fold (fun newb i -> (reducePossibilities (getRow size board i)) @ newb) ([])
+    //|> List.concat
 
 (* reduce possible numbers in columns *)
 let colScan size board =
-    let b = board
-    let s = size
-    b
+    let newcols = [0..size-1]
+                  |> List.fold (fun cols i -> (reducePossibilities (getCol size board i)::cols)) ([])
+    [0..size-1]
+    |> List.fold (fun newb i -> (List.skip i |> List.take 1)
+    xxx
 
 (* reduce possible numbers in boxes *)
 let boxScan size board =
