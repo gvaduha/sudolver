@@ -1,6 +1,4 @@
-﻿open System
-
-type Value = Value of int | None
+﻿type Value = Value of int | None
 type Cell = (Value * int list)
 //type Board = int * Cell list
 
@@ -15,12 +13,12 @@ let initialValues size values =
     |> Map.ofList
 
 (* create and initialize board *)
-let createBoard board initials =
+let initBoard board initials =
     let (_, newBoard) = board |> List.fold (fun (i, b) e -> 
                                                 (i+1, (match Map.tryFind i initials with
-                                                        | Some n -> (Value n, set [])::b
-                                                        | _ -> e::b))) (1, [])
-    newBoard
+                                                       | Some n -> (Value n, set [])::b
+                                                       | _ -> e::b))) (0, [])
+    newBoard |> List.rev
 
 (* board raw *)
 let getRow size board n =
@@ -33,7 +31,6 @@ let getCol size board n =
                                                    (sl |> List.skip size, dl @ e))
                                                    (board,[])
     col
-
 
 (* prints board (ad-hoc)*)
 let printBoard size board =
@@ -51,23 +48,20 @@ let reducePossibilities group =
                                               | None -> l) ([])
     group |> List.map (fun x -> let y = Set.difference (snd x) (Set.ofList nums)
                                 (fst x, y))
+
 (* reduce possible numbers in raws *)
 let rawScan size board =
     [0..size-1]
     |> List.rev
     |> List.fold (fun newb i -> (reducePossibilities (getRow size board i)) @ newb) ([])
-    //|> List.concat
 
 (* reduce possible numbers in columns *)
 let colScan size board =
     let newcols = [0..size-1]
-                  |> List.fold (fun cols i -> (reducePossibilities cols @ (getCol size board i))) ([])
-    //newcols
-    //let coltr l shift size = l |> List.fold (fun nl x -> if (x+shift)%size=0 then x :: nl else nl) [] |> List.rev
+                  |> List.fold (fun cols i -> cols @ (reducePossibilities (getCol size board i))) ([])
     let coltr l shift size = [0..size-1] |> List.fold (fun nl x -> (l |> List.skip (x*size+shift) |> List.head) :: nl) [] |> List.rev
     [0..size-1]
     |> List.fold (fun nl s -> nl @ coltr newcols s size) []
-    //newcols //|> List.concat
 
 (* reduce possible numbers in boxes *)
 let boxScan size board =
@@ -76,60 +70,77 @@ let boxScan size board =
     b
 
 (* set numbers in cells if there is only one possibility *)
-let reduceSolved size board =
-    let b = board
-    let s = size
-    b
+let reduceSolved board =
+    board |> List.fold (fun b x -> match x with
+                                     | (None, v) -> match List.ofSeq v with
+                                                    | h::[] -> (Value h, Set[])::b
+                                                    | _ -> x::b
+                                     | _ -> x::b) []
+    |> List.rev
 
-(**)
+(* check if there are any empty (None) cells *)
 let isIncompleted board =
     let res = List.tryFind (fun x -> if fst x = None then true else false) board
     match res with
-    | Some x -> true
+    | Some _ -> true
     | _ -> false
 
-(**)
+(* solver loop *)
 let rec simpleREPL size board =
-    let b = board |> rawScan size |>  (*colScan size |>*) boxScan size |> reduceSolved size
-    b
-    //printBoard size b
+    let b = board |> rawScan size |>  colScan size |> (*boxScan size |>*) reduceSolved
+    printBoard size b
 
-    //match (isIncompleted b) with
-    //| false -> b
-    //| true -> simpleREPL size b
+    match (isIncompleted b) with
+    | false -> b
+    | true -> simpleREPL size b
 
 (**)
 let parallelREPL =
     ()
 
-(* coordinates a values of known numbers ((x,y),val) *)
-let gameInitials = [
-        ((0,0),2); ((0,1),5); ((0,5),3); ((0,7),9); ((0,8),1);
-        ((1,0),3); ((1,2),9); ((1,6),7); ((1,7),2);
-        ((2,2),1); ((2,5),6); ((2,6),3);
-        ((3,4),6); ((3,5),8); ((3,8),3);
-        ((4,1),1); ((4,4),4);
-        ((5,0),6); ((5,2),3); ((5,7),5);
-        ((6,0),1); ((6,1),3); ((6,2),2); ((6,7),7);
-        ((7,5),4); ((7,7),6);
-        ((8,0),7); ((8,1),6); ((8,2),4); ((8,4),1);
+(**)
+let simpleBoard = [
+        ((0,0),4); ((0,1),1); ((0,4),6); ((0,7),7);
+        ((1,2),3); ((1,4),8); ((1,5),5); ((1,8),9);
+        ((2,1),2); ((2,3),3); ((2,4),7); ((2,6),5); ((2,8),1);
+        ((3,1),3); ((3,3),6); ((3,5),9); ((3,6),2); ((3,7),5);
+        ((4,0),6); ((4,3),5); ((4,5),1);
+        ((5,2),9); ((5,4),2); ((5,8),3);
+        ((6,2),6); ((6,3),2); ((6,6),7); ((6,7),4); ((6,8),5);
+        ((7,3),4); ((7,5),6); ((7,6),8);
+        ((8,0),2); ((8,1),8); ((8,2),4); ((8,6),1); ((8,7),9); ((8,8),6);
         ]
 
+(**)
+let expertBoard = [
+        ((0,1),1); ((0,2),7); ((0,4),5); ((0,6),9);
+        ((1,8),1);
+        ((2,0),2); ((2,6),4);
+        ((3,4),3); ((3,5),1); ((3,6),5); ((3,7),6);
+        ((4,0),9); ((4,3),6); ((4,7),4);
+        ((5,2),8); ((5,7),9);
+        ((6,1),4); ((6,2),6); ((6,4),8);
+        ((7,2),3); ((7,3),4)
+        ((8,1),8); ((8,5),6);
+        ]
+
+(* coordinates a values of known numbers ((x,y),val) *)
+//let gameInitials = simpleBoard
+let gameInitials = expertBoard
+
+
 [<EntryPoint>]
-let main argv =
+let main _ =
     let boardSize = 9
     let emptyBoard = getEmptyBoard boardSize
-    let board = createBoard emptyBoard (initialValues boardSize gameInitials)
+    let board = initBoard emptyBoard (initialValues boardSize gameInitials)
     printBoard boardSize board
+
     //let y = rawScan boardSize board
-    //printBoard boardSize y
-    //printfn "%A" (y)
-    //printfn "%A" (getCol boardSize board 0)
-    let y = colScan boardSize board
+    //let y = colScan boardSize board
+    let y = simpleREPL boardSize board
     printBoard boardSize y
-    printfn "%A" (y)
+    //printfn "%A" (y)
     //printfn "%A" (isIncompleted boardSize board)
 
-    //simpleREPL boardSize board
-    //printBoard boardSize board
     0
