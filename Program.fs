@@ -32,6 +32,18 @@ let getCol size board n =
                                                    (board,[])
     col
 
+(* board box *)
+let getBox size board n =
+    let h = int (sqrt (float size))
+    let w = int (size / h)
+    let ndx shft = 
+        let rs = shft % h
+        let cs = int (shft / h)
+        //printfn "%A*%A+%A*%A=%A" (size*h) cs w rs (size*h*cs + w*rs)
+        [0..h-1] |> List.fold (fun ndx j -> ndx @ ([0..w-1] |> List.fold (fun row i -> (j*w*h + i + size*h*cs + w*rs)::row) [] |> List.rev)) []
+    (ndx n) |> List.fold (fun v i -> (board |> List.skip i |> List.head)::v) [] |> List.rev
+
+
 (* prints board (ad-hoc)*)
 let printBoard size board =
     let _ = board |> List.fold (fun i x ->  match (fst x) with
@@ -65,9 +77,11 @@ let colScan size board =
 
 (* reduce possible numbers in boxes *)
 let boxScan size board =
-    let b = board
-    let s = size
-    b
+    let newboxes = [0..size-1]
+                   |> List.fold (fun b i -> b @ (reducePossibilities (getBox size board i))) ([])
+    newboxes
+    //let b = board
+    //b
 
 (* set numbers in cells if there is only one possibility *)
 let reduceSolved board =
@@ -138,9 +152,10 @@ let main _ =
 
     //let y = rawScan boardSize board
     //let y = colScan boardSize board
-    let y = simpleREPL boardSize board
+    let y = boxScan boardSize board
     printBoard boardSize y
-    //printfn "%A" (y)
+    printfn "%A" (y)
+    //let y = simpleREPL boardSize board
     //printfn "%A" (isIncompleted boardSize board)
 
     0
