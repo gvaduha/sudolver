@@ -30,9 +30,9 @@ let getRow size board n =
 let getCol size board n =
     let (_, col) = [0..size-1]
                    |> List.fold (fun (sl, dl) e -> let e = sl |> List.skip n |> List.take 1
-                                                   (sl |> List.skip size, e::dl))
+                                                   (sl |> List.skip size, dl @ e))
                                                    (board,[])
-    col |> List.rev
+    col
 
 
 (* prints board (ad-hoc)*)
@@ -61,10 +61,13 @@ let rawScan size board =
 (* reduce possible numbers in columns *)
 let colScan size board =
     let newcols = [0..size-1]
-                  |> List.fold (fun cols i -> (reducePossibilities (getCol size board i)::cols)) ([])
+                  |> List.fold (fun cols i -> (reducePossibilities cols @ (getCol size board i))) ([])
+    //newcols
+    //let coltr l shift size = l |> List.fold (fun nl x -> if (x+shift)%size=0 then x :: nl else nl) [] |> List.rev
+    let coltr l shift size = [0..size-1] |> List.fold (fun nl x -> (l |> List.skip (x*size+shift) |> List.head) :: nl) [] |> List.rev
     [0..size-1]
-    |> List.fold (fun newb i -> (List.skip i |> List.take 1)
-    xxx
+    |> List.fold (fun nl s -> nl @ coltr newcols s size) []
+    //newcols //|> List.concat
 
 (* reduce possible numbers in boxes *)
 let boxScan size board =
@@ -87,7 +90,7 @@ let isIncompleted board =
 
 (**)
 let rec simpleREPL size board =
-    let b = board |> rawScan size |>  colScan size |> boxScan size |> reduceSolved size
+    let b = board |> rawScan size |>  (*colScan size |>*) boxScan size |> reduceSolved size
     b
     //printBoard size b
 
@@ -118,10 +121,13 @@ let main argv =
     let emptyBoard = getEmptyBoard boardSize
     let board = createBoard emptyBoard (initialValues boardSize gameInitials)
     printBoard boardSize board
-    let y = rawScan boardSize board
+    //let y = rawScan boardSize board
+    //printBoard boardSize y
+    //printfn "%A" (y)
+    //printfn "%A" (getCol boardSize board 0)
+    let y = colScan boardSize board
     printBoard boardSize y
     printfn "%A" (y)
-    //printfn "%A" (getCol boardSize board 0)
     //printfn "%A" (isIncompleted boardSize board)
 
     //simpleREPL boardSize board
