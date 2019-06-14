@@ -105,11 +105,28 @@ let colScan size board =
     [0..size-1]
     |> List.fold (fun nl s -> nl @ coltr newcols s size) []
 
+(* if there is possible value in only cell for box it should be reduced *)
+let boxReduce box =
+    let probvals = box |> List.map (fun x -> snd x)
+    let vals = probvals
+               |> List.fold (fun acc x -> acc @ (x |> List.ofSeq)) []
+               |> List.countBy (fun x->x)
+               |> List.filter (fun x -> snd x = 1)
+               |> List.map (fun x -> fst x)
+               |> Set.ofList
+    let solved = probvals |> List.map (fun x -> vals |> Set.intersect x)
+    List.zip solved box |> List.map (fun x -> match fst x |> Set.isEmpty with
+                                              | true -> snd x
+                                              | false -> (Value (fst x |> Seq.head), Set[]))
+
 (* reduce possible numbers in boxes *)
 let boxScan size board =
     let newboxes = [0..size-1]
                    |> List.fold (fun b i -> b @ (reducePossibilities (getBox size board i))) ([])
-    newboxes
+    let reduced  = [0..size-1]
+                   |> List.rev
+                   |> List.fold (fun newb i -> (boxReduce (getRow size newboxes i)) @ newb) ([])
+    reduced
     |> fromBox size
 
 (* set numbers in cells if there is only one possibility *)
