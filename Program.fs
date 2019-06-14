@@ -1,4 +1,13 @@
-﻿type Value = Value of int | None
+﻿(* expand list to a new list applying function to elements *)
+let expand = fun f lit l ->
+    l
+    |> List.fold (fun acc i -> (List.map (fun x -> f i x) lit) :: acc) [] 
+    |> List.rev
+    |> List.concat
+
+let expandr f len l = expand f [0..len-1] l
+    
+type Value = Value of int | None
 type Cell = (Value * int list)
 //type Board = int * Cell list
 
@@ -43,6 +52,17 @@ let getBox size board n =
         [0..h-1] |> List.fold (fun ndx j -> ndx @ ([0..w-1] |> List.fold (fun row i -> (j*w*h + i + size*h*cs + w*rs)::row) [] |> List.rev)) []
     (ndx n) |> List.fold (fun v i -> (board |> List.skip i |> List.head)::v) [] |> List.rev
 
+let fromBox size board =
+    let h = int (sqrt (float size))
+    let w = int (size / h)
+    let gendx w h =
+        [0..h-1]
+        |> expandr (fun i _ -> i*(w*h)*h) 1
+        |> expandr (fun i x -> x*w+i) h
+        |> expandr (fun i x -> x*(w*h)+i) h
+        |> expandr (fun i x -> x+i) w
+    let ndx = gendx w h
+    ndx |> List.fold (fun acc i -> (board |> List.skip i |> List.head) :: acc) [] |> List.rev
 
 (* prints board (ad-hoc)*)
 let printBoard size board =
@@ -80,8 +100,7 @@ let boxScan size board =
     let newboxes = [0..size-1]
                    |> List.fold (fun b i -> b @ (reducePossibilities (getBox size board i))) ([])
     newboxes
-    //let b = board
-    //b
+    |> fromBox size
 
 (* set numbers in cells if there is only one possibility *)
 let reduceSolved board =
@@ -101,7 +120,7 @@ let isIncompleted board =
 
 (* solver loop *)
 let rec simpleREPL size board =
-    let b = board |> rawScan size |>  colScan size |> (*boxScan size |>*) reduceSolved
+    let b = board |> rawScan size |>  colScan size |> boxScan size |> reduceSolved
     printBoard size b
 
     match (isIncompleted b) with
@@ -139,8 +158,8 @@ let expertBoard = [
         ]
 
 (* coordinates a values of known numbers ((x,y),val) *)
-//let gameInitials = simpleBoard
-let gameInitials = expertBoard
+let gameInitials = simpleBoard
+//let gameInitials = expertBoard
 
 
 [<EntryPoint>]
@@ -152,10 +171,10 @@ let main _ =
 
     //let y = rawScan boardSize board
     //let y = colScan boardSize board
-    let y = boxScan boardSize board
-    printBoard boardSize y
-    printfn "%A" (y)
-    //let y = simpleREPL boardSize board
+    //let y = boxScan boardSize board
+    //printBoard boardSize y
+    //printfn "%A" (y)
+    let y = simpleREPL boardSize board
     //printfn "%A" (isIncompleted boardSize board)
 
     0
