@@ -73,6 +73,16 @@ let printBoard size board =
                                             i+1) (1)
     printfn ""
 
+(* prints board with debugging info *)
+let debugPrintBoard size board =
+    let _ = board |> List.fold (fun i x ->  match (fst x) with
+                                            | None -> printf "[ ] <%9s> | " ((snd x) |> Set.fold (fun acc x -> acc + (string x)) "")
+                                            | Value v -> printf "[%d] <%9s> | " v ((snd x) |> Set.fold (fun acc x -> acc + (string x)) "")
+                                            if i % size = 0 then printfn ""
+                                            i+1) (1)
+    printfn ""
+
+
 (* in every cell removes possible numbers that already solved in group *)
 let reducePossibilities group = 
     let nums = group |> List.fold (fun l x -> match fst x with
@@ -122,6 +132,8 @@ let isIncompleted board =
 let rec simpleREPL size board =
     let b = board |> rawScan size |>  colScan size |> boxScan size |> reduceSolved
     printBoard size b
+    debugPrintBoard size b
+    //printfn "%A" b
 
     match (isIncompleted b) with
     | false -> b
@@ -145,6 +157,19 @@ let simpleBoard = [
         ]
 
 (**)
+let hardBoard = [
+        ((0,2),4); ((0,3),8); ((0,4),6); ((0,7),3);
+        ((1,2),1); ((1,7),9);
+        ((2,0),8); ((2,5),9); ((2,7),6);
+        ((3,0),5); ((3,3),2); ((3,5),6); ((3,8),1);
+        ((4,1),2); ((4,2),7); ((4,5),1);
+        ((5,4),4); ((5,5),3); ((5,8),6);
+        ((6,1),5);
+        ((7,2),9); ((7,6),4);
+        ((8,3),4); ((8,7),1); ((8,8),5);
+        ]
+
+(**)
 let expertBoard = [
         ((0,1),1); ((0,2),7); ((0,4),5); ((0,6),9);
         ((1,8),1);
@@ -158,7 +183,8 @@ let expertBoard = [
         ]
 
 (* coordinates a values of known numbers ((x,y),val) *)
-let gameInitials = simpleBoard
+//let gameInitials = simpleBoard
+let gameInitials = hardBoard
 //let gameInitials = expertBoard
 
 
@@ -168,6 +194,7 @@ let main _ =
     let emptyBoard = getEmptyBoard boardSize
     let board = initBoard emptyBoard (initialValues boardSize gameInitials)
     printBoard boardSize board
+    debugPrintBoard boardSize board
 
     //let y = rawScan boardSize board
     //let y = colScan boardSize board
@@ -175,6 +202,5 @@ let main _ =
     //printBoard boardSize y
     //printfn "%A" (y)
     let y = simpleREPL boardSize board
-    //printfn "%A" (isIncompleted boardSize board)
 
     0
